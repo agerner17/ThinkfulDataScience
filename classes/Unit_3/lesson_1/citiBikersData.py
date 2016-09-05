@@ -55,7 +55,7 @@ stationIds = df['id'].tolist()
 stationIds = ['_' + str(x) + ' INT' for x in stationIds]
 id_bikes = collections.defaultdict(int) #defaultdict to store available bikes by station
 count = 0 
-### TABLES ###
+##################################### TABLES ###########################################
 
 # create table for citibike reference STATIONARY DATA
 
@@ -97,4 +97,5 @@ availableBikesTable()
 
 
 ###/TABLES###
+
 
