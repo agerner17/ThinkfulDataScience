@@ -1,6 +1,5 @@
 import requests 
 import pandas as pd 
-import matplotlib.pyplot as plt 
 from pandas.io.json import json_normalize 
 import sqlite3 as lite
 # a package with datetime objects
@@ -36,7 +35,7 @@ print "The average amount of active stations: ",averageActiveStation
 print "The average amount of inactive stations: ", averageInactiveStation 
 print "The median of active stations is: ",medianActiveStation
 """
-#######################################SQL###################################### 
+#######################################Database###################################### 
 
 con = lite.connect('citi_bike.db')
 cur = con.cursor()
@@ -54,10 +53,12 @@ stationIds = df['id'].tolist()
 #add the '_' to the station name and also add the data type for SQLite
 #in this case, we're concatenating the string and joining all the station ids (now with '_' and 'INT' added)
 stationIds = ['_' + str(x) + ' INT' for x in stationIds]
-
-### TABLES ###
+id_bikes = collections.defaultdict(int) #defaultdict to store available bikes by station
+count = 0 
+##################################### TABLES ###########################################
 
 # create table for citibike reference STATIONARY DATA
+
 def createReferencesTable():
 	#for loop to populate values in the database
 	with con:
@@ -69,30 +70,32 @@ def createReferencesTable():
 createReferencesTable() 
 
 #create table for available bike NONSTATIONARY DATA
+
 def availableBikesTable():
+	count = 0 
 	with con:
 		cur.execute("CREATE TABLE available_bikes ( execution_time INT, " +  ", ".join(stationIds) + ");")
 		
 		for i in range(60):
 			r = requests.get('http://www.citibikenyc.com/stations/json')
-    	exec_time = parse(r.json()['executionTime']).strftime("%s")
+			exec_time = parse(r.json()['executionTime']).strftime("%s")
+			cur.execute('INSERT INTO available_bikes (execution_time) VALUES (?)', (exec_time,))
+			con.commit()
+			
+			for station in r.json()['stationBeanList']:
+				id_bikes[station['id']] = station['availableBikes']
 
-    	cur.execute('INSERT INTO available_bikes (execution_time) VALUES (?)', (exec_time,))
-    	counter = 1
-			#loop through the stations in the station list
-    	for station in r.json()['stationBeanList']:
-    		cur.execute("UPDATE available_bikes SET _%d = %d WHERE execution_time = %s" % (station['id'], station['availableBikes'], exec_time))
-    		print(counter, station['id'], station['availableBikes'])
-
-			#iterate through the defaultdict to update the values in the database
-    	con.commit()
-    	counter = counter + 1 
-
-    	time.sleep(60)
+			for k, v in id_bikes.iteritems():
+				cur.execute("UPDATE available_bikes SET _" + str(k) + " = " + str(v) + " WHERE execution_time = " + exec_time)
+			print "Hour ", count
+			count = count + 1
+			time.sleep(60)
+	con.close()
 			# pause the program for 60 seconds  
 
 availableBikesTable()
 
 
 ###/TABLES###
+
 
