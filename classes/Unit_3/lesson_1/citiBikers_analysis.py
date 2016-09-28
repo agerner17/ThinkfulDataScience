@@ -23,6 +23,7 @@ for col in df.columns:
 	for k,v in enumerate(station_vals):
 		if k < len(station_vals) - 1:
 			station_change += abs(station_vals[k] - station_vals[k+1])
+			print(station_change)
 		hour_change[int(stationid)] = station_change #convert the station id back to integer
 
 
@@ -33,10 +34,10 @@ def keyWithHighestValue(d):
 # assign the max key to max_station
 max_stationChange = keyWithHighestValue(hour_change)
 
-
 cur.execute("SELECT id, stationname, latitude, longitude FROM citibike_reference WHERE id = ?", (max_stationChange,))
 data = cur.fetchone()
 print("The most active station is station id %s at %s latitude: %s longitude: %s " % data)
+
 print("With %d bicycles coming and going in the hour between %s and %s" % (
     hour_change[max_stationChange],
     datetime.datetime.fromtimestamp(int(df.index[0])).strftime('%Y-%m-%dT%H:%M:%S'),
